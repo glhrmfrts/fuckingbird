@@ -130,7 +130,7 @@ func sendTweet(text string, params *twitter.StatusUpdateParams) (*twitter.Tweet,
 }
 
 func sendReplyTweet(text string, id int64) (*twitter.Tweet, *http.Response, error) {
-	params := &twitter.StatusUpdateParams{InReplyToStatusId: id}
+	params := &twitter.StatusUpdateParams{InReplyToStatusID: id}
 	return sendTweet(text, params)
 }
 
