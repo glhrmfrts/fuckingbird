@@ -7,17 +7,12 @@ import (
 	"os"
 	"bufio"
 	"net/http"
+	"flag"
 
+	"github.com/coreos/pkg/flagutil"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 	"github.com/fatih/color"
-)
-
-const (
-	consumerKey = ""
-	consumerSecret = ""
-	accessToken = ""
-	accessSecret = ""
 )
 
 type AppState int
@@ -146,6 +141,9 @@ func readInput(text string, indicator string) rune {
 		log.Fatal(err)
 	}
 	str = str[:len(str) - 1]
+	if '\r' == str[len(str) - 1] {
+		str = str[:len(str) - 1]
+	}
 	return rune(str[len(str) - 1])
 }
 
@@ -179,9 +177,21 @@ func handleInput(key rune) {
 }
 
 func main() {
+	flags := flag.NewFlagSet("user-auth", flag.ExitOnError)
+	consumerKey := flags.String("consumer-key", "", "Twitter Consumer Key")
+	consumerSecret := flags.String("consumer-secret", "", "Twitter Consumer Secret")
+	accessToken := flags.String("access-token", "", "Twitter Access Token")
+	accessSecret := flags.String("access-secret", "", "Twitter Access Secret")
+	flags.Parse(os.Args[1:])
+	flagutil.SetFlagsFromEnv(flags, "TWITTER")
+
+	if *consumerKey == "" || *consumerSecret == "" || *accessToken == "" || *accessSecret == "" {
+		log.Fatal("Consumer key/secret and Access token/secret required")
+	}
+
 	bufInput = bufio.NewReader(os.Stdin)
-	config = oauth1.NewConfig(consumerKey, consumerSecret)
-	token = oauth1.NewToken(accessToken, accessSecret)
+	config = oauth1.NewConfig(*consumerKey, *consumerSecret)
+	token = oauth1.NewToken(*accessToken, *accessSecret)
 	
 	// OAuth1 http.Client will automatically authorize Requests
 	httpClient := config.Client(oauth1.NoContext, token)
@@ -196,11 +206,11 @@ func main() {
 	userParams := &twitter.StreamUserParams{
 	 	StallWarnings: twitter.Bool(true),
 	 	With:          "followings",
-	        Language:      []string{"pt"},
+		Language:      []string{"pt"},
 	}
 	stream, err := client.Streams.User(userParams)
 	if err != nil {
-	 	log.Fatal(err)
+		log.Fatal(err)
 	}
 	// Receive messages until stopped or stream quits
 	go demux.HandleChan(stream.Messages)
